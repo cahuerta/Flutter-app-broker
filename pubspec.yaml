@@ -1,5 +1,5 @@
 name: predictiva_app
-description: App móvil de APP PREDICTIVA — fondos y screener interactivo.
+description: App móvil de APP PREDICTIVA — Radar y Cartera interactivos.
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -10,6 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
   http: ^1.2.0
+  fl_chart: ^0.68.0
   cupertino_icons: ^1.0.6
 
 dev_dependencies:

@@ -45,21 +45,21 @@ class ApiService {
     await http.post(_u('/dashboard/order-analysis/run'));
   }
 
-  // ---------- SCREENER ----------
-  Future<List<ScreenerCandidate>> fetchScreener() async {
+  // ---------- SCREENER (igual que la web: 2 secciones separadas) ----------
+  Future<ScreenerSections> fetchScreenerSections() async {
     final j = await _getJson('/dashboard/screener') as Map<String, dynamic>;
-    final strict = (j['candidates_strict'] as List?) ?? [];
-    final top20 = (j['top20_global'] as List?) ?? [];
-    final seen = <String>{};
-    final all = <ScreenerCandidate>[];
-    for (final raw in [...strict, ...top20]) {
-      final c = ScreenerCandidate.fromJson(raw as Map<String, dynamic>);
-      if (c.ticker.isEmpty || seen.contains(c.ticker)) continue;
-      seen.add(c.ticker);
-      all.add(c);
-    }
-    all.sort((a, b) => (b.score ?? -1).compareTo(a.score ?? -1));
-    return all;
+    final strictRaw = (j['candidates_strict'] as List?) ?? [];
+    final top20Raw = (j['top20_global'] as List?) ?? [];
+
+    final strict = strictRaw.map((e) => ScreenerCandidate.fromJson(e as Map<String, dynamic>)).toList()
+      ..sort((a, b) => (b.score ?? -1).compareTo(a.score ?? -1));
+    final top20 = top20Raw.map((e) => ScreenerCandidate.fromJson(e as Map<String, dynamic>)).toList()
+      ..sort((a, b) => (b.score ?? -1).compareTo(a.score ?? -1));
+
+    return ScreenerSections(
+      strict: strict.take(15).toList(),
+      top20: top20.take(20).toList(),
+    );
   }
 
   // ---------- PORTFOLIO ----------
@@ -88,5 +88,27 @@ class ApiService {
     final j = await _getJson('/alpha') as Map<String, dynamic>;
     final results = j['results'] as Map<String, dynamic>?;
     return AlphaData.fromJson(results?[ticker] as Map<String, dynamic>?);
+  }
+
+  // ---------- UNIVERSE (universo completo investigado, con alpha) ----------
+  Future<List<UniverseRow>> fetchUniverse() async {
+    final j = await _getJson('/dashboard/universe') as Map<String, dynamic>;
+    final rows = (j['rows'] as List?) ?? [];
+    final list = rows.map((e) => UniverseRow.fromJson(e as Map<String, dynamic>)).toList();
+    list.sort((a, b) => (b.alpha ?? -999).compareTo(a.alpha ?? -999));
+    return list;
+  }
+
+  // ---------- SIGNALS: /signals (nota: NO tiene prefijo /dashboard) ----------
+  Future<List<SignalRow>> fetchSignals() async {
+    final j = await _getJson('/signals') as Map<String, dynamic>;
+    final raw = (j['signals'] as List?) ?? [];
+    final list = raw
+        .map((e) => e as Map<String, dynamic>)
+        .where((e) => e['error'] == null)
+        .map((e) => SignalRow.fromJson(e))
+        .toList();
+    list.sort((a, b) => (b.confidence ?? 0).compareTo(a.confidence ?? 0));
+    return list;
   }
 }

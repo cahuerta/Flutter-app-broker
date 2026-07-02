@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'config.dart';
-import 'screens/radar_screen.dart';
-import 'screens/cartera_screen.dart';
+import 'screens/global_screen.dart';
+import 'screens/universe_screen.dart';
+import 'screens/signals_screen.dart';
+import 'screens/screener_screen.dart';
+import 'screens/portfolio_screen.dart';
+import 'screens/analysis_screen.dart';
 
 void main() {
   runApp(const PredictivaApp());
@@ -35,14 +39,30 @@ class RootShell extends StatefulWidget {
   State<RootShell> createState() => _RootShellState();
 }
 
-class _RootShellState extends State<RootShell> {
-  int _index = 0;
-  static const _titles = ['Radar', 'Cartera'];
+class _RootShellState extends State<RootShell> with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
 
-  final _screens = const [
-    RadarScreen(),
-    CarteraScreen(),
+  static const _tabs = [
+    'Global',
+    'Universe',
+    'Universe CL',
+    'Signals',
+    'Screener',
+    'Portfolio',
+    'Analysis',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: _tabs.length, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,17 +70,27 @@ class _RootShellState extends State<RootShell> {
       backgroundColor: const Color(AppColors.bg),
       appBar: AppBar(
         backgroundColor: const Color(0xFF081427),
-        title: Text(_titles[_index]),
+        title: const Text('Predictiva'),
         elevation: 0,
+        bottom: TabBar(
+          controller: _tabController,
+          isScrollable: true,
+          indicatorColor: const Color(AppColors.blue),
+          labelColor: Colors.white,
+          unselectedLabelColor: const Color(AppColors.mutedDark),
+          tabs: _tabs.map((t) => Tab(text: t)).toList(),
+        ),
       ),
-      body: IndexedStack(index: _index, children: _screens),
-      bottomNavigationBar: NavigationBar(
-        backgroundColor: const Color(0xFF081427),
-        selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() => _index = i),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.radar), label: 'Radar'),
-          NavigationDestination(icon: Icon(Icons.account_balance_wallet), label: 'Cartera'),
+      body: TabBarView(
+        controller: _tabController,
+        children: const [
+          GlobalScreen(),
+          UniverseScreen(),
+          UniverseScreen(filterChile: true),
+          SignalsScreen(),
+          ScreenerScreen(),
+          PortfolioScreen(),
+          AnalysisScreen(),
         ],
       ),
     );

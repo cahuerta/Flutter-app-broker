@@ -182,6 +182,12 @@ class ScreenerCandidate {
       );
 }
 
+class ScreenerSections {
+  final List<ScreenerCandidate> strict;
+  final List<ScreenerCandidate> top20;
+  ScreenerSections({required this.strict, required this.top20});
+}
+
 // ---------- PORTFOLIO: /trading/status ----------
 class PortfolioStatus {
   final double? equity;
@@ -338,5 +344,87 @@ class AlphaData {
       thetaCleared: flags?['v6_3_theta_cleared'] == true,
       error: j['error'] as String?,
     );
+  }
+}
+
+// ---------- UNIVERSE: /dashboard/universe ----------
+class UniverseRow {
+  final String ticker;
+  final double? alpha;
+  final double? confidence;
+  final double positionValue;
+  final bool executable;
+  final String? blockReason;
+  final bool hasPosition;
+  final String? modeContext;
+
+  UniverseRow({
+    required this.ticker,
+    this.alpha,
+    this.confidence,
+    this.positionValue = 0,
+    this.executable = false,
+    this.blockReason,
+    this.hasPosition = false,
+    this.modeContext,
+  });
+
+  factory UniverseRow.fromJson(Map<String, dynamic> j) => UniverseRow(
+        ticker: (j['ticker'] ?? '').toString(),
+        alpha: _f(j['alpha']),
+        confidence: _f(j['confidence']),
+        positionValue: _f(j['positionValue']) ?? 0,
+        executable: j['executable'] == true,
+        blockReason: j['block_reason'] as String?,
+        hasPosition: j['has_position'] == true,
+        modeContext: j['mode_context'] as String?,
+      );
+
+  String get blockReasonLabel {
+    switch (blockReason) {
+      case 'no_alpha':
+        return 'Sin alpha calculado aún';
+      case 'kill_switch_close':
+        return 'Kill switch — cerrar posición';
+      case 'kill_switch_no_open':
+        return 'Kill switch — no abrir';
+      case 'alpha_below_threshold':
+        return 'Alpha bajo el umbral del modo actual';
+      default:
+        return blockReason ?? '—';
+    }
+  }
+}
+
+// ---------- SIGNALS: /signals ----------
+class SignalRow {
+  final String ticker;
+  final double? confidence;
+  final String? quality;
+  final String? recommendation;
+
+  SignalRow({required this.ticker, this.confidence, this.quality, this.recommendation});
+
+  factory SignalRow.fromJson(Map<String, dynamic> j) => SignalRow(
+        ticker: (j['ticker'] ?? '').toString(),
+        confidence: _f(j['confidence']),
+        quality: j['quality'] as String?,
+        recommendation: j['recommendation'] as String?,
+      );
+
+  String get qualityLabel {
+    final q = quality ?? '';
+    if (q.contains('STRONG')) return '🔥 Alta';
+    if (q.contains('GOOD')) return '✅ Buena';
+    if (q.contains('WEAK')) return '⚠️ Débil';
+    return '❌ Ruido';
+  }
+
+  String get recommendationLabel {
+    final r = (recommendation ?? '').toUpperCase();
+    if (r.contains('BUY')) return '🟢 Comprar';
+    if (r.contains('SELL')) return '🔴 Vender';
+    if (r.contains('HOLD')) return '🟡 Mantener';
+    return recommendation ?? '—';
   }
 }

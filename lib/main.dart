@@ -38,30 +38,19 @@ class RootShell extends StatefulWidget {
   State<RootShell> createState() => _RootShellState();
 }
 
-class _RootShellState extends State<RootShell> with SingleTickerProviderStateMixin {
-  late final TabController _tabController;
+class _RootShellState extends State<RootShell> {
+  int _index = 0;
 
-  // Analysis NO es pestaña — se activa tocando un ticker (igual que en la web)
-  static const _tabs = [
-    'Global',
-    'Universe',
-    'Universe CL',
-    'Signals',
-    'Screener',
-    'Portfolio',
+  static const _titles = ['Global', 'Universe', 'Universe CL', 'Signals', 'Screener', 'Portfolio'];
+
+  final _screens = const [
+    GlobalScreen(),
+    UniverseScreen(),
+    UniverseScreen(filterChile: true),
+    SignalsScreen(),
+    ScreenerScreen(),
+    PortfolioScreen(),
   ];
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: _tabs.length, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -69,26 +58,22 @@ class _RootShellState extends State<RootShell> with SingleTickerProviderStateMix
       backgroundColor: const Color(AppColors.bg),
       appBar: AppBar(
         backgroundColor: const Color(0xFF081427),
-        title: const Text('Predictiva'),
+        title: Text(_titles[_index]),
         elevation: 0,
-        bottom: TabBar(
-          controller: _tabController,
-          isScrollable: true,
-          indicatorColor: const Color(AppColors.blue),
-          labelColor: Colors.white,
-          unselectedLabelColor: const Color(AppColors.mutedDark),
-          tabs: _tabs.map((t) => Tab(text: t)).toList(),
-        ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: const [
-          GlobalScreen(),
-          UniverseScreen(),
-          UniverseScreen(filterChile: true),
-          SignalsScreen(),
-          ScreenerScreen(),
-          PortfolioScreen(),
+      body: IndexedStack(index: _index, children: _screens),
+      bottomNavigationBar: NavigationBar(
+        backgroundColor: const Color(0xFF081427),
+        selectedIndex: _index,
+        onDestinationSelected: (i) => setState(() => _index = i),
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        destinations: const [
+          NavigationDestination(icon: Icon(Icons.show_chart, size: 20), label: 'Global'),
+          NavigationDestination(icon: Icon(Icons.public, size: 20), label: 'Universe'),
+          NavigationDestination(icon: Icon(Icons.flag, size: 20), label: 'U. CL'),
+          NavigationDestination(icon: Icon(Icons.sensors, size: 20), label: 'Signals'),
+          NavigationDestination(icon: Icon(Icons.filter_list, size: 20), label: 'Screener'),
+          NavigationDestination(icon: Icon(Icons.account_balance_wallet, size: 20), label: 'Portfolio'),
         ],
       ),
     );

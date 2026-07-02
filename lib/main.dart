@@ -5,7 +5,6 @@ import 'screens/universe_screen.dart';
 import 'screens/signals_screen.dart';
 import 'screens/screener_screen.dart';
 import 'screens/portfolio_screen.dart';
-import 'screens/analysis_screen.dart';
 
 void main() {
   runApp(const PredictivaApp());
@@ -42,6 +41,7 @@ class RootShell extends StatefulWidget {
 class _RootShellState extends State<RootShell> with SingleTickerProviderStateMixin {
   late final TabController _tabController;
 
+  // Analysis NO es pestaña — se activa tocando un ticker (igual que en la web)
   static const _tabs = [
     'Global',
     'Universe',
@@ -49,7 +49,6 @@ class _RootShellState extends State<RootShell> with SingleTickerProviderStateMix
     'Signals',
     'Screener',
     'Portfolio',
-    'Analysis',
   ];
 
   @override
@@ -90,7 +89,6 @@ class _RootShellState extends State<RootShell> with SingleTickerProviderStateMix
           SignalsScreen(),
           ScreenerScreen(),
           PortfolioScreen(),
-          AnalysisScreen(),
         ],
       ),
     );

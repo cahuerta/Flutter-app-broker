@@ -40,6 +40,23 @@ class EquityPoint {
       );
 }
 
+// ---------- GLOBAL: /dashboard/market-context ----------
+class MarketContext {
+  final String? marketMode;
+  final double? confidence;
+  final String? reason;
+  final String? timestamp;
+
+  MarketContext({this.marketMode, this.confidence, this.reason, this.timestamp});
+
+  factory MarketContext.fromJson(Map<String, dynamic> j) => MarketContext(
+        marketMode: j['market_mode'] as String?,
+        confidence: _f(j['confidence']),
+        reason: j['reason'] as String?,
+        timestamp: j['timestamp'] as String?,
+      );
+}
+
 // ---------- GLOBAL: /dashboard/model-quality ----------
 class HorizonStat {
   final double? hitRatePct;

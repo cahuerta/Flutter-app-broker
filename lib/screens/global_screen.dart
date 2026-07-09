@@ -24,6 +24,7 @@ class _GlobalScreenState extends State<GlobalScreen> {
   PerformanceData? _perf;
   List<EquityPoint> _equity = [];
   ModelQuality? _model;
+  MarketContext? _market; // [MKT] estado del régimen de mercado
   OrderAnalysis? _analysis;
   bool _runningAnalysis = false;
 
@@ -43,11 +44,13 @@ class _GlobalScreenState extends State<GlobalScreen> {
         _api.fetchPerformance(),
         _api.fetchEquityCurve(),
         _api.fetchModelQuality(),
+        _api.fetchMarketContext(), // [MKT]
       ]);
       setState(() {
         _perf = results[0] as PerformanceData;
         _equity = results[1] as List<EquityPoint>;
         _model = results[2] as ModelQuality;
+        _market = results[3] as MarketContext?; // [MKT]
         _loading = false;
       });
     } catch (e) {
@@ -98,6 +101,14 @@ class _GlobalScreenState extends State<GlobalScreen> {
     return const Color(AppColors.muted);
   }
 
+  // [MKT] Color según régimen de mercado
+  Color _marketColor(String? mode) {
+    if (mode == 'growth') return const Color(AppColors.green);
+    if (mode == 'defensive') return const Color(AppColors.red);
+    if (mode == 'neutral') return const Color(AppColors.orange);
+    return const Color(AppColors.muted);
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_loading) return const Center(child: CircularProgressIndicator());
@@ -112,6 +123,33 @@ class _GlobalScreenState extends State<GlobalScreen> {
       child: ListView(
         padding: const EdgeInsets.all(14),
         children: [
+          // ════════════════════════════════
+          // [MKT] ESTADO DEL MERCADO
+          // ════════════════════════════════
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(color: const Color(AppColors.bgCard), borderRadius: BorderRadius.circular(18)),
+            child: Row(children: [
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Text('MODO MERCADO', style: TextStyle(color: Color(AppColors.mutedDark), fontSize: 11)),
+                  Text(
+                    _market?.marketMode?.toUpperCase() ?? '—',
+                    style: TextStyle(color: _marketColor(_market?.marketMode), fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                ]),
+              ),
+              Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                const Text('CONFIANZA', style: TextStyle(color: Color(AppColors.mutedDark), fontSize: 11)),
+                Text(
+                  _market?.confidence != null ? '${(_market!.confidence! * 100).round()}%' : '—',
+                  style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+              ]),
+            ]),
+          ),
+          const SizedBox(height: 20),
+
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(color: const Color(AppColors.bgCard), borderRadius: BorderRadius.circular(18)),

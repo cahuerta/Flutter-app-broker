@@ -31,6 +31,18 @@ class ApiService {
     return ModelQuality.fromJson(j as Map<String, dynamic>);
   }
 
+  // [MKT] Estado del régimen de mercado. Usa try/catch → null porque el
+  // endpoint puede devolver 404 si market_context.json aún no existe
+  // (mismo patrón defensivo que fetchOrderAnalysis).
+  Future<MarketContext?> fetchMarketContext() async {
+    try {
+      final j = await _getJson('/dashboard/market-context') as Map<String, dynamic>;
+      return MarketContext.fromJson(j);
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<OrderAnalysis?> fetchOrderAnalysis() async {
     try {
       final j = await _getJson('/dashboard/order-analysis') as Map<String, dynamic>;

@@ -28,6 +28,9 @@ class _GlobalScreenState extends State<GlobalScreen> {
   OrderAnalysis? _analysis;
   bool _runningAnalysis = false;
 
+  RealPerformance? _realPerf;
+  bool _runningRealPerf = false;
+
   @override
   void initState() {
     super.initState();
@@ -84,6 +87,31 @@ class _GlobalScreenState extends State<GlobalScreen> {
       }
     } catch (_) {}
     setState(() => _runningAnalysis = false);
+  }
+
+  Future<void> _loadRealPerfLazy() async {
+    if (_realPerf != null) return;
+    final r = await _api.fetchRealPerformance();
+    if (mounted) setState(() => _realPerf = r);
+  }
+
+  Future<void> _runRealPerformance() async {
+    setState(() => _runningRealPerf = true);
+    try {
+      await _api.runRealPerformance();
+      for (int i = 0; i < 35; i++) {
+        await Future.delayed(const Duration(seconds: 1));
+        final res = await _api.fetchRealPerformance();
+        if (res != null) {
+          setState(() {
+            _realPerf = res;
+            _runningRealPerf = false;
+          });
+          return;
+        }
+      }
+    } catch (_) {}
+    setState(() => _runningRealPerf = false);
   }
 
   String _fmt$(double? v) => v == null ? '—' : '\$${v.round()}';
@@ -248,6 +276,21 @@ class _GlobalScreenState extends State<GlobalScreen> {
                     return _AnalysisResult(analysis: _analysis!, onRerun: _runAnalysis, running: _runningAnalysis);
                   },
                 ),
+                const SizedBox(height: 18),
+                const Text('Performance Real (Sharpe/Drawdown)', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 8),
+                FutureBuilder(
+                  future: _loadRealPerfLazy(),
+                  builder: (context, snapshot) {
+                    if (_realPerf == null && !_runningRealPerf) {
+                      return ElevatedButton(onPressed: _runRealPerformance, child: const Text('▶ Correr análisis'));
+                    }
+                    if (_runningRealPerf) {
+                      return const Text('⟳ Calculando Sharpe/Drawdown...', style: TextStyle(color: Color(AppColors.gold)));
+                    }
+                    return _RealPerformanceResult(perf: _realPerf!, onRerun: _runRealPerformance, running: _runningRealPerf);
+                  },
+                ),
                 const SizedBox(height: 10),
               ],
             ),
@@ -315,6 +358,90 @@ class _AnalysisResult extends StatelessWidget {
   }
 }
 
+class _RealPerformanceResult extends StatelessWidget {
+  final RealPerformance perf;
+  final VoidCallback onRerun;
+  final bool running;
+  const _RealPerformanceResult({required this.perf, required this.onRerun, required this.running});
+
+  @override
+  Widget build(BuildContext context) {
+    if (perf.status != 'ready') {
+      return ElevatedButton(onPressed: onRerun, child: const Text('▶ Correr análisis'));
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (perf.ensemble != null) ...[
+          const Text('Teórico (ensemble COMPRA/VENDE)', style: TextStyle(color: Color(AppColors.mutedDark), fontSize: 11)),
+          const SizedBox(height: 6),
+          _BacktestStatRow(result: perf.ensemble!),
+          const SizedBox(height: 14),
+        ],
+        if (perf.realAccount != null) ...[
+          const Text('Cuenta real (Alpaca)', style: TextStyle(color: Color(AppColors.mutedDark), fontSize: 11)),
+          const SizedBox(height: 6),
+          _BacktestStatRow(result: perf.realAccount!),
+        ],
+        const SizedBox(height: 10),
+        TextButton(onPressed: running ? null : onRerun, child: const Text('↺ Actualizar', style: TextStyle(fontSize: 12))),
+      ],
+    );
+  }
+}
+
+class _BacktestStatRow extends StatelessWidget {
+  final BacktestResult result;
+  const _BacktestStatRow({required this.result});
+
+  String _fmt(double? v, {int decimals = 2}) => v == null ? '—' : v.toStringAsFixed(decimals);
+
+  @override
+  Widget build(BuildContext context) {
+    final sharpeNw = result.sharpeNeweyWest;
+    final sharpeColor = sharpeNw == null
+        ? const Color(AppColors.muted)
+        : sharpeNw >= 1
+            ? const Color(AppColors.green)
+            : sharpeNw >= 0
+                ? const Color(AppColors.orange)
+                : const Color(AppColors.red);
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(color: const Color(AppColors.bgTile), borderRadius: BorderRadius.circular(12)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Text('SHARPE (NW)', style: TextStyle(color: Color(AppColors.mutedDark), fontSize: 10)),
+                Text(_fmt(sharpeNw), style: TextStyle(color: sharpeColor, fontSize: 18, fontWeight: FontWeight.bold)),
+              ]),
+            ),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Text('SHARPE CLÁSICO', style: TextStyle(color: Color(AppColors.mutedDark), fontSize: 10)),
+                Text(_fmt(result.sharpeClassic), style: const TextStyle(color: Colors.white70, fontSize: 14)),
+              ]),
+            ),
+          ]),
+          const SizedBox(height: 10),
+          Row(children: [
+            Expanded(child: _SmallStat('Max Drawdown', result.maxDrawdown != null ? '${(result.maxDrawdown! * 100).toStringAsFixed(1)}%' : '—')),
+            Expanded(child: _SmallStat('Win Rate', result.winRate != null ? '${(result.winRate! * 100).toStringAsFixed(1)}%' : '—')),
+            Expanded(child: _SmallStat('Retorno total', result.totalReturnPct != null ? '${result.totalReturnPct!.toStringAsFixed(1)}%' : '—')),
+          ]),
+          const SizedBox(height: 4),
+          Text('${result.nTrades ?? 0} trades · ${result.nDays ?? 0} días', style: const TextStyle(color: Color(AppColors.mutedDark), fontSize: 10)),
+        ],
+      ),
+    );
+  }
+}
+
 class _EquityChart extends StatelessWidget {
   final List<EquityPoint> points;
   const _EquityChart({required this.points});
@@ -344,32 +471,6 @@ class _EquityChart extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _HitBar extends StatelessWidget {
-  final String label;
-  final double? value;
-  const _HitBar({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    if (value == null) return const SizedBox.shrink();
-    final color = hitColorOf(value);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(children: [
-        SizedBox(width: 60, child: Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12))),
-        Expanded(
-          child: Stack(children: [
-            Container(height: 7, decoration: BoxDecoration(color: Colors.white.withOpacity(0.06), borderRadius: BorderRadius.circular(4))),
-            FractionallySizedBox(widthFactor: (value! / 100).clamp(0, 1), child: Container(height: 7, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(4)))),
-          ]),
-        ),
-        const SizedBox(width: 8),
-        Text('${value!.toStringAsFixed(1)}%', style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
-      ]),
     );
   }
 }

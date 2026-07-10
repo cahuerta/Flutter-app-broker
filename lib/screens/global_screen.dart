@@ -316,6 +316,32 @@ class _SmallStat extends StatelessWidget {
   }
 }
 
+class _HitBar extends StatelessWidget {
+  final String label;
+  final double? value;
+  const _HitBar({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    if (value == null) return const SizedBox.shrink();
+    final color = hitColorOf(value);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(children: [
+        SizedBox(width: 60, child: Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12))),
+        Expanded(
+          child: Stack(children: [
+            Container(height: 7, decoration: BoxDecoration(color: Colors.white.withOpacity(0.06), borderRadius: BorderRadius.circular(4))),
+            FractionallySizedBox(widthFactor: (value! / 100).clamp(0, 1), child: Container(height: 7, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(4)))),
+          ]),
+        ),
+        const SizedBox(width: 8),
+        Text('${value!.toStringAsFixed(1)}%', style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
+      ]),
+    );
+  }
+}
+
 class _AnalysisResult extends StatelessWidget {
   final OrderAnalysis analysis;
   final VoidCallback onRerun;
@@ -441,31 +467,7 @@ class _BacktestStatRow extends StatelessWidget {
     );
   }
 }
-class _HitBar extends StatelessWidget {
-  final String label;
-  final double? value;
-  const _HitBar({required this.label, required this.value});
 
-  @override
-  Widget build(BuildContext context) {
-    if (value == null) return const SizedBox.shrink();
-    final color = hitColorOf(value);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(children: [
-        SizedBox(width: 60, child: Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12))),
-        Expanded(
-          child: Stack(children: [
-            Container(height: 7, decoration: BoxDecoration(color: Colors.white.withOpacity(0.06), borderRadius: BorderRadius.circular(4))),
-            FractionallySizedBox(widthFactor: (value! / 100).clamp(0, 1), child: Container(height: 7, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(4)))),
-          ]),
-        ),
-        const SizedBox(width: 8),
-        Text('${value!.toStringAsFixed(1)}%', style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
-      ]),
-    );
-  }
-}
 class _EquityChart extends StatelessWidget {
   final List<EquityPoint> points;
   const _EquityChart({required this.points});

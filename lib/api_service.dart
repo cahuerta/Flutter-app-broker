@@ -57,6 +57,23 @@ class ApiService {
     await http.post(_u('/dashboard/order-analysis/run'));
   }
 
+  // ---------- GLOBAL: REAL PERFORMANCE (Sharpe / Drawdown) ----------
+  // Mismo patrón defensivo que fetchOrderAnalysis: GET cacheado, null si
+  // no está listo o si el endpoint aún no existe (report no generado).
+  Future<RealPerformance?> fetchRealPerformance() async {
+    try {
+      final j = await _getJson('/dashboard/real-performance') as Map<String, dynamic>;
+      if (j['status'] != 'ready') return null;
+      return RealPerformance.fromJson(j);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> runRealPerformance() async {
+    await http.post(_u('/dashboard/real-performance/run'));
+  }
+
   // ---------- SCREENER (igual que la web: 2 secciones separadas) ----------
   Future<ScreenerSections> fetchScreenerSections() async {
     final j = await _getJson('/dashboard/screener') as Map<String, dynamic>;

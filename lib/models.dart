@@ -445,3 +445,105 @@ class SignalRow {
     return recommendation ?? '—';
   }
 }
+// ---------- GLOBAL: /dashboard/real-performance ----------
+class BacktestResult {
+  final String label;
+  final int? nTrades;
+  final int? nDays;
+  final int? nEvaluations;
+  final double? sharpeClassic;
+  final double? sharpeNeweyWest;
+  final double? maxDrawdown;
+  final double? winRate;
+  final double? totalReturnPct;
+  final double? avgDailyReturnPct;
+
+  BacktestResult({
+    required this.label,
+    this.nTrades,
+    this.nDays,
+    this.nEvaluations,
+    this.sharpeClassic,
+    this.sharpeNeweyWest,
+    this.maxDrawdown,
+    this.winRate,
+    this.totalReturnPct,
+    this.avgDailyReturnPct,
+  });
+
+  factory BacktestResult.fromJson(Map<String, dynamic> j) => BacktestResult(
+        label: (j['label'] ?? '').toString(),
+        nTrades: _i(j['n_trades']),
+        nDays: _i(j['n_days']),
+        nEvaluations: _i(j['n_evaluations']),
+        sharpeClassic: _f(j['sharpe_classic']),
+        sharpeNeweyWest: _f(j['sharpe_newey_west']),
+        maxDrawdown: _f(j['max_drawdown']),
+        winRate: _f(j['win_rate']),
+        totalReturnPct: _f(j['total_return_pct']),
+        avgDailyReturnPct: _f(j['avg_daily_return_pct']),
+      );
+}
+
+class ClosedEarlyStats {
+  final int? nOportunidadPerdida;
+  final double? avgOportunidadPerdidaPct;
+  final int? nOportunidadGanada;
+  final double? avgOportunidadGanadaPct;
+
+  ClosedEarlyStats({this.nOportunidadPerdida, this.avgOportunidadPerdidaPct, this.nOportunidadGanada, this.avgOportunidadGanadaPct});
+
+  factory ClosedEarlyStats.fromJson(Map<String, dynamic>? j) {
+    if (j == null) return ClosedEarlyStats();
+    return ClosedEarlyStats(
+      nOportunidadPerdida: _i(j['n_oportunidad_perdida']),
+      avgOportunidadPerdidaPct: _f(j['avg_oportunidad_perdida_pct']),
+      nOportunidadGanada: _i(j['n_oportunidad_ganada']),
+      avgOportunidadGanadaPct: _f(j['avg_oportunidad_ganada_pct']),
+    );
+  }
+}
+
+class RealPerformance {
+  final String status;
+  final BacktestResult? ensemble;              // theoretical.ensemble
+  final Map<String, BacktestResult> byHorizon;  // theoretical.by_horizon (H1..H10)
+  final BacktestResult? realAccount;            // real.real_account
+  final Map<String, BacktestResult> byDominantH; // real.by_dominant_h
+  final ClosedEarlyStats closedEarlyStats;
+  final String? generatedAt;
+
+  RealPerformance({
+    required this.status,
+    this.ensemble,
+    this.byHorizon = const {},
+    this.realAccount,
+    this.byDominantH = const {},
+    this.closedEarlyStats = const ClosedEarlyStats(),
+    this.generatedAt,
+  });
+
+  factory RealPerformance.fromJson(Map<String, dynamic> j) {
+    Map<String, BacktestResult> mapOf(dynamic raw) {
+      if (raw is! Map) return {};
+      return raw.map((k, v) => MapEntry(k.toString(), BacktestResult.fromJson(v as Map<String, dynamic>)));
+    }
+
+    final theoretical = j['theoretical'] as Map<String, dynamic>?;
+    final real = j['real'] as Map<String, dynamic>?;
+
+    return RealPerformance(
+      status: j['status']?.toString() ?? 'idle',
+      ensemble: theoretical?['ensemble'] != null
+          ? BacktestResult.fromJson(theoretical!['ensemble'] as Map<String, dynamic>)
+          : null,
+      byHorizon: mapOf(theoretical?['by_horizon']),
+      realAccount: real?['real_account'] != null
+          ? BacktestResult.fromJson(real!['real_account'] as Map<String, dynamic>)
+          : null,
+      byDominantH: mapOf(real?['by_dominant_h']),
+      closedEarlyStats: ClosedEarlyStats.fromJson(real?['closed_early_stats'] as Map<String, dynamic>?),
+      generatedAt: j['generated_at'] as String?,
+    );
+  }
+}

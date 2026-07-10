@@ -445,6 +445,7 @@ class SignalRow {
     return recommendation ?? '—';
   }
 }
+
 // ---------- GLOBAL: /dashboard/real-performance ----------
 class BacktestResult {
   final String label;
@@ -491,7 +492,12 @@ class ClosedEarlyStats {
   final int? nOportunidadGanada;
   final double? avgOportunidadGanadaPct;
 
-  ClosedEarlyStats({this.nOportunidadPerdida, this.avgOportunidadPerdidaPct, this.nOportunidadGanada, this.avgOportunidadGanadaPct});
+  const ClosedEarlyStats({    // ← FIX: agregado "const"
+    this.nOportunidadPerdida,
+    this.avgOportunidadPerdidaPct,
+    this.nOportunidadGanada,
+    this.avgOportunidadGanadaPct,
+  });
 
   factory ClosedEarlyStats.fromJson(Map<String, dynamic>? j) {
     if (j == null) return ClosedEarlyStats();
